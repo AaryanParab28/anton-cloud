@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python run.py)",
+      "Bash(curl -s http://localhost:5000/)",
+      "Bash(curl -s -X POST http://localhost:5000/chat -H 'Content-Type: application/json' -d '{\"message\": \"hello ANTON\"}')",
+      "Bash(PORT=5001 python run.py)",
+      "Bash(curl -s http://localhost:5001/)",
+      "Bash(curl -s -X POST http://localhost:5001/chat -H 'Content-Type: application/json' -d '{\"message\": \"hello ANTON\"}')",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

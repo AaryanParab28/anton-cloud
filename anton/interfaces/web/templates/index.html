@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0e15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>{{ name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="header" role="banner">
+    <div class="header-inner">
+      <span class="header-name" aria-label="{{ name }} personal AI assistant">{{ name }}</span>
+      <div class="header-status" aria-live="polite" aria-atomic="true">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-text" id="status-text">online</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="messages" id="messages" role="log" aria-label="Conversation" aria-live="polite">
+    <div class="welcome" id="welcome" aria-hidden="true">
+      <p class="welcome-prompt">ask me anything</p>
+    </div>
+  </main>
+
+  <footer class="composer" role="contentinfo">
+    <form class="composer-form" id="form" autocomplete="off" novalidate>
+      <label for="input" class="sr-only">Message to {{ name }}</label>
+      <textarea
+        class="composer-input"
+        id="input"
+        placeholder="say something…"
+        rows="1"
+        maxlength="4000"
+        aria-multiline="true"
+      ></textarea>
+      <button class="composer-send" type="submit" aria-label="Send message">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+          <path d="M8 2.5L13.5 8L8 13.5M2.5 8H13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </form>
+  </footer>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
