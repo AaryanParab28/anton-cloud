@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#0c0e15">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>{{ name }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <title>ANTON</title>
+  <link rel="stylesheet" href="css/anton.css">
 </head>
 <body>
   <header class="header" role="banner">
     <div class="header-inner">
-      <span class="header-name" aria-label="{{ name }} personal AI assistant">{{ name }}</span>
+      <span class="header-name" aria-label="ANTON personal AI assistant">ANTON</span>
       <div class="header-status" aria-live="polite" aria-atomic="true">
         <span class="status-dot" id="status-dot"></span>
         <span class="status-text" id="status-text">online</span>
@@ -28,7 +28,7 @@
 
   <footer class="composer" role="contentinfo">
     <form class="composer-form" id="form" autocomplete="off" novalidate>
-      <label for="input" class="sr-only">Message to {{ name }}</label>
+      <label for="input" class="sr-only">Message to ANTON</label>
       <textarea
         class="composer-input"
         id="input"
@@ -45,6 +45,6 @@
     </form>
   </footer>
 
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

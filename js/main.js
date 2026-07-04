@@ -1,3 +1,5 @@
+const ECHO_DELAY_MS = 500;
+
 const form      = document.getElementById('form');
 const input     = document.getElementById('input');
 const messages  = document.getElementById('messages');
@@ -27,7 +29,7 @@ function removeWelcome() {
 function appendMessage(role, text) {
   removeWelcome();
 
-  const el    = document.createElement('div');
+  const el = document.createElement('div');
   el.className = `message message--${role}`;
 
   const label = document.createElement('div');
@@ -49,7 +51,7 @@ function appendMessage(role, text) {
 function appendThinking() {
   removeWelcome();
 
-  const el    = document.createElement('div');
+  const el = document.createElement('div');
   el.className = 'message message--anton message--thinking';
 
   const label = document.createElement('div');
@@ -74,6 +76,10 @@ function appendThinking() {
   return el;
 }
 
+function echo(text) {
+  return new Promise((resolve) => setTimeout(() => resolve(text), ECHO_DELAY_MS));
+}
+
 async function sendMessage(text) {
   appendMessage('user', text);
   const thinkingEl = appendThinking();
@@ -81,22 +87,9 @@ async function sendMessage(text) {
   sendBtn.disabled = true;
 
   try {
-    const res  = await fetch('/chat', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ message: text }),
-    });
-    const data = await res.json();
+    const reply = await echo(text);
     thinkingEl.remove();
-
-    if (res.ok) {
-      appendMessage('anton', data.reply);
-    } else {
-      appendMessage('anton', `error: ${data.error ?? 'something went wrong'}`);
-    }
-  } catch {
-    thinkingEl.remove();
-    appendMessage('anton', 'could not reach the server — is ANTON running?');
+    appendMessage('anton', reply);
   } finally {
     setStatus('online');
     sendBtn.disabled = false;
