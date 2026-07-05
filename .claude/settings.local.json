@@ -26,7 +26,13 @@
       "Read(//private/tmp/**)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8123/index.html)",
       "Bash(lsof -ti:8123)",
-      "Bash(xargs -r kill)"
+      "Bash(xargs -r kill)",
+      "Bash(git fetch *)",
+      "Bash(node --check /Applications/coding/anton-cloud/js/brain/router.js)",
+      "Bash(curl *)",
+      "Bash(node --check /Applications/coding/anton-cloud/js/brain/providers/groq.js)",
+      "Bash(node --check /Applications/coding/anton-cloud/js/memory/store.js)",
+      "Bash(node --check /Applications/coding/anton-cloud/js/config.js)"
     ]
   }
 }

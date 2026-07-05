@@ -1,7 +1,7 @@
 const DB_NAME = 'anton';
 const DB_VERSION = 1;
 const STORE_NAME = 'settings';
-const API_KEY_ID = 'gemini_api_key';
+const API_KEY_ID = 'groq_api_key';
 
 function openDb() {
   return new Promise((resolve, reject) => {

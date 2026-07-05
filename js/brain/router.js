@@ -1,4 +1,3 @@
-import * as gemini from './providers/gemini.js';
 import * as groq from './providers/groq.js';
 import { MAX_RETRIES } from '../config.js';
 
@@ -26,7 +25,7 @@ export async function chat(messages, apiKey) {
   let lastError;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const reply = await gemini.generate(messages, apiKey);
+      const reply = await groq.generate(messages, apiKey);
       rememberReply(cacheKey, reply);
       return reply;
     } catch (err) {
@@ -34,18 +33,6 @@ export async function chat(messages, apiKey) {
       if (err.status === 429) {
         break;
       }
-    }
-  }
-
-  if (lastError && lastError.status === 429) {
-    try {
-      const reply = await groq.generate(messages, apiKey);
-      rememberReply(cacheKey, reply);
-      return reply;
-    } catch (groqErr) {
-      throw new Error(
-        `Gemini rate limit hit (429), and the Groq fallback isn't built yet: ${groqErr.message}`,
-      );
     }
   }
 
