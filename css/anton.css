@@ -294,3 +294,72 @@ body {
   opacity: 0.25;
   cursor: not-allowed;
 }
+
+/* ── HEADER: RESET KEY ── */
+
+.header-reset-key {
+  background: none;
+  border: none;
+  margin-left: var(--space-sm);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.header-reset-key:hover {
+  color: var(--color-text);
+}
+
+/* ── KEY GATE ── */
+
+.key-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: var(--color-bg);
+}
+
+.key-gate[hidden] {
+  display: none;
+}
+
+.key-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 22rem;
+}
+
+.key-gate-form label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.key-gate-form input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: var(--space-sm);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+}
+
+.key-gate-form button {
+  background: var(--color-accent);
+  color: oklch(9% 0.015 240);
+  border: none;
+  border-radius: 0.5rem;
+  padding: var(--space-sm);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  cursor: pointer;
+}

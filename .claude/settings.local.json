@@ -18,7 +18,15 @@
       "Bash(disown)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8123/)",
       "Bash(curl -s http://localhost:8123/)",
-      "Bash(pkill -f \"http.server 8123\")"
+      "Bash(pkill -f \"http.server 8123\")",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(python3 -m http.server 8123)",
+      "Bash(echo \"started with pid $!\")",
+      "Read(//private/tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8123/index.html)",
+      "Bash(lsof -ti:8123)",
+      "Bash(xargs -r kill)"
     ]
   }
 }

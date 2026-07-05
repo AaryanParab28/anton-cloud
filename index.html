@@ -17,6 +17,7 @@
         <span class="status-dot" id="status-dot"></span>
         <span class="status-text" id="status-text">online</span>
       </div>
+      <button class="header-reset-key" id="reset-key" type="button">reset key</button>
     </div>
   </header>
 
@@ -25,6 +26,20 @@
       <p class="welcome-prompt">ask me anything</p>
     </div>
   </main>
+
+  <div class="key-gate" id="key-gate" hidden>
+    <form class="key-gate-form" id="key-gate-form" autocomplete="off" novalidate>
+      <label for="key-gate-input">Paste your Gemini API key to continue</label>
+      <input
+        type="password"
+        id="key-gate-input"
+        placeholder="Gemini API key"
+        autocomplete="off"
+        spellcheck="false"
+      >
+      <button type="submit">Save</button>
+    </form>
+  </div>
 
   <footer class="composer" role="contentinfo">
     <form class="composer-form" id="form" autocomplete="off" novalidate>
@@ -45,6 +60,6 @@
     </form>
   </footer>
 
-  <script src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

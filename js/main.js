@@ -1,11 +1,17 @@
-const ECHO_DELAY_MS = 500;
+import { chat } from './brain/llm.js';
+import { SYSTEM_PROMPT } from './identity.js';
+import { getApiKey, setApiKey, clearApiKey } from './memory/store.js';
 
-const form      = document.getElementById('form');
-const input     = document.getElementById('input');
-const messages  = document.getElementById('messages');
-const statusDot = document.getElementById('status-dot');
-const statusTxt = document.getElementById('status-text');
-const sendBtn   = document.querySelector('.composer-send');
+const form         = document.getElementById('form');
+const input        = document.getElementById('input');
+const messages     = document.getElementById('messages');
+const statusDot    = document.getElementById('status-dot');
+const statusTxt    = document.getElementById('status-text');
+const sendBtn      = document.querySelector('.composer-send');
+const resetKeyBtn  = document.getElementById('reset-key');
+const keyGate      = document.getElementById('key-gate');
+const keyGateForm  = document.getElementById('key-gate-form');
+const keyGateInput = document.getElementById('key-gate-input');
 
 let welcomeEl = document.getElementById('welcome');
 
@@ -76,9 +82,29 @@ function appendThinking() {
   return el;
 }
 
-function echo(text) {
-  return new Promise((resolve) => setTimeout(() => resolve(text), ECHO_DELAY_MS));
+function showKeyGate() {
+  keyGate.hidden = false;
+  keyGateInput.value = '';
+  keyGateInput.focus();
 }
+
+function hideKeyGate() {
+  keyGate.hidden = true;
+}
+
+keyGateForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const key = keyGateInput.value.trim();
+  if (!key) return;
+  await setApiKey(key);
+  hideKeyGate();
+  input.focus();
+});
+
+resetKeyBtn.addEventListener('click', async () => {
+  await clearApiKey();
+  showKeyGate();
+});
 
 async function sendMessage(text) {
   appendMessage('user', text);
@@ -87,9 +113,15 @@ async function sendMessage(text) {
   sendBtn.disabled = true;
 
   try {
-    const reply = await echo(text);
+    const reply = await chat([
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: text },
+    ]);
     thinkingEl.remove();
     appendMessage('anton', reply);
+  } catch (err) {
+    thinkingEl.remove();
+    appendMessage('anton', `Error: ${err.message}`);
   } finally {
     setStatus('online');
     sendBtn.disabled = false;
@@ -120,4 +152,13 @@ form.addEventListener('submit', (e) => {
   sendMessage(text);
 });
 
-input.focus();
+async function boot() {
+  const existingKey = await getApiKey();
+  if (!existingKey) {
+    showKeyGate();
+  } else {
+    input.focus();
+  }
+}
+
+boot();
