@@ -38,9 +38,15 @@ export async function chat(messages, apiKey) {
   }
 
   if (lastError && lastError.status === 429) {
-    const reply = await groq.generate(messages, apiKey);
-    rememberReply(cacheKey, reply);
-    return reply;
+    try {
+      const reply = await groq.generate(messages, apiKey);
+      rememberReply(cacheKey, reply);
+      return reply;
+    } catch (groqErr) {
+      throw new Error(
+        `Gemini rate limit hit (429), and the Groq fallback isn't built yet: ${groqErr.message}`,
+      );
+    }
   }
 
   throw lastError;
