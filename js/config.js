@@ -12,3 +12,7 @@ export const MAX_CONTEXT_MESSAGES = 16;
 
 // Hard cap on ReAct loop iterations (model calls) per user turn.
 export const MAX_AGENT_STEPS = 5;
+
+// Groq's Whisper transcription endpoint (STT). Separate from the chat model above.
+export const WHISPER_MODEL = 'whisper-large-v3-turbo';
+export const WHISPER_ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions';

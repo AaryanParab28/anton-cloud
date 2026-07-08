@@ -295,6 +295,32 @@ body {
   cursor: not-allowed;
 }
 
+.composer-mic {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast);
+}
+
+.composer-mic:hover {
+  color: var(--color-text);
+}
+
+.composer-mic.recording {
+  color: oklch(9% 0.015 240);
+  background: oklch(62% 0.19 25);
+  border-color: oklch(62% 0.19 25);
+  animation: blink 900ms ease-in-out infinite;
+}
+
 /* ── HEADER: RESET KEY ── */
 
 .header-reset-key {

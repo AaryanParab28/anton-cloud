@@ -7,6 +7,8 @@ import {
   addMessage,
   clearHistory,
 } from './memory/store.js';
+import * as stt from './voice/stt.js';
+import * as tts from './voice/tts.js';
 
 const form           = document.getElementById('form');
 const input          = document.getElementById('input');
@@ -14,6 +16,8 @@ const messages       = document.getElementById('messages');
 const statusDot      = document.getElementById('status-dot');
 const statusTxt      = document.getElementById('status-text');
 const sendBtn        = document.querySelector('.composer-send');
+const micBtn         = document.getElementById('mic-button');
+const voiceToggleBtn  = document.getElementById('voice-toggle');
 const resetKeyBtn    = document.getElementById('reset-key');
 const clearMemoryBtn = document.getElementById('clear-memory');
 const keyGate        = document.getElementById('key-gate');
@@ -22,6 +26,7 @@ const keyGateInput   = document.getElementById('key-gate-input');
 
 let welcomeEl = document.getElementById('welcome');
 let history = [];
+let isRecording = false;
 
 function setStatus(state) {
   if (state === 'online') {
@@ -137,6 +142,46 @@ clearMemoryBtn.addEventListener('click', async () => {
   resetMessagesView();
 });
 
+voiceToggleBtn.addEventListener('click', () => {
+  const muted = tts.toggleMuted();
+  voiceToggleBtn.textContent = muted ? 'voice: off' : 'voice: on';
+});
+
+micBtn.addEventListener('click', async () => {
+  tts.primeSpeech();
+
+  if (isRecording) {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+    setStatus('transcribing…');
+    micBtn.disabled = true;
+
+    try {
+      const blob = await stt.stopRecording();
+      const apiKey = await getApiKey();
+      const text = await stt.transcribe(blob, apiKey);
+      setStatus('online');
+      sendMessage(text);
+    } catch (err) {
+      appendMessage('anton', `Error: ${err.message}`);
+      setStatus('online');
+    } finally {
+      micBtn.disabled = false;
+    }
+    return;
+  }
+
+  try {
+    await stt.startRecording();
+    isRecording = true;
+    micBtn.classList.add('recording');
+    setStatus('listening…');
+  } catch (err) {
+    appendMessage('anton', `Error: ${err.message}`);
+    setStatus('online');
+  }
+});
+
 async function sendMessage(text) {
   appendMessage('user', text);
   await addMessage('user', text);
@@ -157,6 +202,7 @@ async function sendMessage(text) {
     appendMessage('anton', reply);
     await addMessage('assistant', reply);
     history.push({ role: 'assistant', content: reply });
+    tts.speak(reply);
   } catch (err) {
     thinkingEl.remove();
     appendMessage('anton', `Error: ${err.message}`);
@@ -183,6 +229,7 @@ input.addEventListener('keydown', (e) => {
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
+  tts.primeSpeech();
   const text = input.value.trim();
   if (!text || sendBtn.disabled) return;
   input.value = '';

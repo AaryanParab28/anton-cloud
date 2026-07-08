@@ -32,7 +32,8 @@
       "Bash(curl *)",
       "Bash(node --check /Applications/coding/anton-cloud/js/brain/providers/groq.js)",
       "Bash(node --check /Applications/coding/anton-cloud/js/memory/store.js)",
-      "Bash(node --check /Applications/coding/anton-cloud/js/config.js)"
+      "Bash(node --check /Applications/coding/anton-cloud/js/config.js)",
+      "Bash(git status *)"
     ]
   }
 }
