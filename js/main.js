@@ -1,27 +1,35 @@
-import { chat } from './brain/llm.js';
-import { SYSTEM_PROMPT } from './identity.js';
-import { getApiKey, setApiKey, clearApiKey } from './memory/store.js';
+import { run as runAgent } from './agent/loop.js';
+import {
+  getApiKey,
+  setApiKey,
+  clearApiKey,
+  getHistory,
+  addMessage,
+  clearHistory,
+} from './memory/store.js';
 
-const form         = document.getElementById('form');
-const input        = document.getElementById('input');
-const messages     = document.getElementById('messages');
-const statusDot    = document.getElementById('status-dot');
-const statusTxt    = document.getElementById('status-text');
-const sendBtn      = document.querySelector('.composer-send');
-const resetKeyBtn  = document.getElementById('reset-key');
-const keyGate      = document.getElementById('key-gate');
-const keyGateForm  = document.getElementById('key-gate-form');
-const keyGateInput = document.getElementById('key-gate-input');
+const form           = document.getElementById('form');
+const input          = document.getElementById('input');
+const messages       = document.getElementById('messages');
+const statusDot      = document.getElementById('status-dot');
+const statusTxt      = document.getElementById('status-text');
+const sendBtn        = document.querySelector('.composer-send');
+const resetKeyBtn    = document.getElementById('reset-key');
+const clearMemoryBtn = document.getElementById('clear-memory');
+const keyGate        = document.getElementById('key-gate');
+const keyGateForm    = document.getElementById('key-gate-form');
+const keyGateInput   = document.getElementById('key-gate-input');
 
 let welcomeEl = document.getElementById('welcome');
+let history = [];
 
 function setStatus(state) {
-  if (state === 'thinking') {
-    statusDot.classList.add('thinking');
-    statusTxt.textContent = 'thinking';
-  } else {
+  if (state === 'online') {
     statusDot.classList.remove('thinking');
     statusTxt.textContent = 'online';
+  } else {
+    statusDot.classList.add('thinking');
+    statusTxt.textContent = state;
   }
 }
 
@@ -30,6 +38,23 @@ function removeWelcome() {
     welcomeEl.remove();
     welcomeEl = null;
   }
+}
+
+function resetMessagesView() {
+  messages.innerHTML = '';
+
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome';
+  welcome.id = 'welcome';
+  welcome.setAttribute('aria-hidden', 'true');
+
+  const prompt = document.createElement('p');
+  prompt.className = 'welcome-prompt';
+  prompt.textContent = 'ask me anything';
+
+  welcome.appendChild(prompt);
+  messages.appendChild(welcome);
+  welcomeEl = welcome;
 }
 
 function appendMessage(role, text) {
@@ -106,19 +131,32 @@ resetKeyBtn.addEventListener('click', async () => {
   showKeyGate();
 });
 
+clearMemoryBtn.addEventListener('click', async () => {
+  await clearHistory();
+  history = [];
+  resetMessagesView();
+});
+
 async function sendMessage(text) {
   appendMessage('user', text);
+  await addMessage('user', text);
+  const priorHistory = history.slice();
+  history.push({ role: 'user', content: text });
+
   const thinkingEl = appendThinking();
   setStatus('thinking');
   sendBtn.disabled = true;
 
   try {
-    const reply = await chat([
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: text },
-    ]);
+    const reply = await runAgent({
+      history: priorHistory,
+      userMessage: text,
+      onStep: (toolName) => setStatus(`using ${toolName}…`),
+    });
     thinkingEl.remove();
     appendMessage('anton', reply);
+    await addMessage('assistant', reply);
+    history.push({ role: 'assistant', content: reply });
   } catch (err) {
     thinkingEl.remove();
     appendMessage('anton', `Error: ${err.message}`);
@@ -152,7 +190,16 @@ form.addEventListener('submit', (e) => {
   sendMessage(text);
 });
 
+async function loadHistory() {
+  const stored = await getHistory();
+  history = stored.map((m) => ({ role: m.role, content: m.content }));
+  for (const m of history) {
+    appendMessage(m.role === 'assistant' ? 'anton' : 'user', m.content);
+  }
+}
+
 async function boot() {
+  await loadHistory();
   const existingKey = await getApiKey();
   if (!existingKey) {
     showKeyGate();
