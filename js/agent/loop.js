@@ -25,8 +25,8 @@ function parseToolCall(text) {
   return null;
 }
 
-export async function run({ history, userMessage, onStep }) {
-  const messages = buildMessages({ history, tools: TOOLS, userMessage });
+export async function run({ history, userMessage, onStep, voiceMode = false }) {
+  const messages = buildMessages({ history, tools: TOOLS, userMessage, voiceMode });
 
   for (let step = 1; step <= MAX_AGENT_STEPS; step++) {
     const reply = await chat(messages);

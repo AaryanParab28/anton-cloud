@@ -1,5 +1,13 @@
 import { WHISPER_ENDPOINT, WHISPER_MODEL } from '../config.js';
 
+const MIC_CONSTRAINTS = {
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  },
+};
+
 let mediaRecorder = null;
 let mediaStream = null;
 let chunks = [];
@@ -12,8 +20,12 @@ function extensionForMimeType(mimeType) {
   return 'dat';
 }
 
+export function openMicStream() {
+  return navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
+}
+
 export async function startRecording() {
-  mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaStream = await openMicStream();
   chunks = [];
   mediaRecorder = new MediaRecorder(mediaStream);
   mediaRecorder.addEventListener('dataavailable', (event) => {

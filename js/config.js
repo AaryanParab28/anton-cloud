@@ -16,3 +16,11 @@ export const MAX_AGENT_STEPS = 5;
 // Groq's Whisper transcription endpoint (STT). Separate from the chat model above.
 export const WHISPER_MODEL = 'whisper-large-v3-turbo';
 export const WHISPER_ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions';
+
+// Barge-in: mic RMS level (0..1) that counts as "user started talking" while ANTON is speaking.
+// Raise if it triggers on background noise/echo; lower if it misses normal speaking volume.
+export const BARGE_IN_THRESHOLD = 0.08;
+
+// How long input must stay above BARGE_IN_THRESHOLD before it's trusted as real speech
+// (guards against short blips/coughs). Raise for fewer false triggers, lower for faster response.
+export const BARGE_IN_SUSTAIN_MS = 250;

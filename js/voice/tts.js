@@ -73,15 +73,34 @@ export function toggleMuted() {
   return muted;
 }
 
-export async function speak(text) {
+export function stopSpeaking() {
+  if (typeof speechSynthesis === 'undefined') {
+    return;
+  }
+  speechSynthesis.cancel();
+}
+
+export async function speak(text, { onEnd } = {}) {
   if (muted || typeof speechSynthesis === 'undefined') {
+    onEnd?.();
     return;
   }
   const clean = sanitizeForSpeech(text);
   if (!clean) {
+    onEnd?.();
     return;
   }
   await waitForVoices();
   speechSynthesis.cancel();
-  speechSynthesis.speak(new SpeechSynthesisUtterance(clean));
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    onEnd?.();
+  };
+  utterance.addEventListener('end', finish);
+  utterance.addEventListener('error', finish);
+  speechSynthesis.speak(utterance);
 }

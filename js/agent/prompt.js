@@ -1,6 +1,11 @@
 import { SYSTEM_PROMPT } from '../identity.js';
 import { MAX_CONTEXT_MESSAGES } from '../config.js';
 
+const VOICE_STYLE_INSTRUCTION =
+  "The user's message came in by voice, and your reply will be read aloud by " +
+  'text-to-speech. Answer conversationally and concisely, the way you would actually say ' +
+  'it out loud: short plain sentences, no lists, no headers, no long paragraphs.';
+
 function toolsBlock(tools) {
   const lines = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n');
   return (
@@ -12,9 +17,12 @@ function toolsBlock(tools) {
   );
 }
 
-export function buildMessages({ history, tools, userMessage }) {
+export function buildMessages({ history, tools, userMessage, voiceMode = false }) {
   const recentHistory = history.slice(-MAX_CONTEXT_MESSAGES);
-  const systemContent = tools.length ? `${SYSTEM_PROMPT}\n\n${toolsBlock(tools)}` : SYSTEM_PROMPT;
+  let systemContent = tools.length ? `${SYSTEM_PROMPT}\n\n${toolsBlock(tools)}` : SYSTEM_PROMPT;
+  if (voiceMode) {
+    systemContent = `${systemContent}\n\n${VOICE_STYLE_INSTRUCTION}`;
+  }
 
   return [
     { role: 'system', content: systemContent },

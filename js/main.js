@@ -9,6 +9,7 @@ import {
 } from './memory/store.js';
 import * as stt from './voice/stt.js';
 import * as tts from './voice/tts.js';
+import * as bargeIn from './voice/barge_in.js';
 
 const form           = document.getElementById('form');
 const input          = document.getElementById('input');
@@ -24,9 +25,18 @@ const keyGate        = document.getElementById('key-gate');
 const keyGateForm    = document.getElementById('key-gate-form');
 const keyGateInput   = document.getElementById('key-gate-input');
 
+const VoiceState = {
+  IDLE: 'idle',
+  LISTENING: 'listening',
+  TRANSCRIBING: 'transcribing',
+  RESPONDING: 'responding',
+  SPEAKING: 'speaking',
+};
+
 let welcomeEl = document.getElementById('welcome');
 let history = [];
-let isRecording = false;
+let voiceState = VoiceState.IDLE;
+let speechGeneration = 0;
 
 function setStatus(state) {
   if (state === 'online') {
@@ -147,48 +157,91 @@ voiceToggleBtn.addEventListener('click', () => {
   voiceToggleBtn.textContent = muted ? 'voice: off' : 'voice: on';
 });
 
-micBtn.addEventListener('click', async () => {
-  tts.primeSpeech();
+function enterIdle() {
+  voiceState = VoiceState.IDLE;
+  micBtn.classList.remove('recording', 'speaking');
+  micBtn.disabled = false;
+  setStatus('online');
+}
 
-  if (isRecording) {
-    isRecording = false;
-    micBtn.classList.remove('recording');
-    setStatus('transcribing…');
-    micBtn.disabled = true;
-
-    try {
-      const blob = await stt.stopRecording();
-      const apiKey = await getApiKey();
-      const text = await stt.transcribe(blob, apiKey);
-      setStatus('online');
-      sendMessage(text);
-    } catch (err) {
-      appendMessage('anton', `Error: ${err.message}`);
-      setStatus('online');
-    } finally {
-      micBtn.disabled = false;
-    }
-    return;
+function stopBargeInIfActive() {
+  if (bargeIn.isMonitoring()) {
+    bargeIn.stopMonitoring();
   }
+}
+
+function interruptSpeakingIfAny() {
+  if (voiceState === VoiceState.SPEAKING) {
+    speechGeneration++; // invalidate the in-flight speak()'s onEnd callback
+    stopBargeInIfActive();
+    tts.stopSpeaking();
+  }
+}
+
+async function beginListening() {
+  speechGeneration++; // invalidate any in-flight speak() onEnd callback
+  stopBargeInIfActive();
+  tts.stopSpeaking();
 
   try {
     await stt.startRecording();
-    isRecording = true;
+    voiceState = VoiceState.LISTENING;
+    micBtn.classList.remove('speaking');
     micBtn.classList.add('recording');
+    micBtn.disabled = false;
     setStatus('listening…');
   } catch (err) {
     appendMessage('anton', `Error: ${err.message}`);
-    setStatus('online');
+    enterIdle();
   }
+}
+
+async function stopListeningAndSend() {
+  voiceState = VoiceState.TRANSCRIBING;
+  micBtn.classList.remove('recording');
+  micBtn.disabled = true;
+  setStatus('transcribing…');
+
+  try {
+    const blob = await stt.stopRecording();
+    const apiKey = await getApiKey();
+    const text = await stt.transcribe(blob, apiKey);
+    micBtn.disabled = false;
+    sendMessage(text, { voice: true });
+  } catch (err) {
+    appendMessage('anton', `Error: ${err.message}`);
+    enterIdle();
+  }
+}
+
+micBtn.addEventListener('click', () => {
+  tts.primeSpeech();
+
+  if (voiceState === VoiceState.SPEAKING) {
+    // Manual STOP control: tapping the mic while ANTON is speaking cancels speech and
+    // immediately opens the mic for a new question — the guaranteed fallback for barge-in.
+    beginListening();
+    return;
+  }
+  if (voiceState === VoiceState.LISTENING) {
+    stopListeningAndSend();
+    return;
+  }
+  if (voiceState === VoiceState.IDLE) {
+    beginListening();
+  }
+  // Ignore taps during TRANSCRIBING/RESPONDING; micBtn is disabled during those states.
 });
 
-async function sendMessage(text) {
+async function sendMessage(text, { voice = false } = {}) {
   appendMessage('user', text);
   await addMessage('user', text);
   const priorHistory = history.slice();
   history.push({ role: 'user', content: text });
 
   const thinkingEl = appendThinking();
+  voiceState = VoiceState.RESPONDING;
+  micBtn.disabled = true;
   setStatus('thinking');
   sendBtn.disabled = true;
 
@@ -196,20 +249,41 @@ async function sendMessage(text) {
     const reply = await runAgent({
       history: priorHistory,
       userMessage: text,
+      voiceMode: voice,
       onStep: (toolName) => setStatus(`using ${toolName}…`),
     });
     thinkingEl.remove();
     appendMessage('anton', reply);
     await addMessage('assistant', reply);
     history.push({ role: 'assistant', content: reply });
-    tts.speak(reply);
+    sendBtn.disabled = false;
+    input.focus();
+
+    if (tts.isMuted()) {
+      enterIdle();
+      return;
+    }
+
+    const myGeneration = ++speechGeneration;
+    voiceState = VoiceState.SPEAKING;
+    micBtn.disabled = false;
+    micBtn.classList.add('speaking');
+    setStatus('speaking…');
+    bargeIn.startMonitoring(() => beginListening());
+    tts.speak(reply, {
+      onEnd: () => {
+        if (speechGeneration !== myGeneration) {
+          return; // superseded by a manual stop or a barge-in trigger
+        }
+        stopBargeInIfActive();
+        enterIdle();
+      },
+    });
   } catch (err) {
     thinkingEl.remove();
     appendMessage('anton', `Error: ${err.message}`);
-  } finally {
-    setStatus('online');
     sendBtn.disabled = false;
-    input.focus();
+    enterIdle();
   }
 }
 
@@ -232,6 +306,7 @@ form.addEventListener('submit', (e) => {
   tts.primeSpeech();
   const text = input.value.trim();
   if (!text || sendBtn.disabled) return;
+  interruptSpeakingIfAny();
   input.value = '';
   resizeInput();
   sendMessage(text);

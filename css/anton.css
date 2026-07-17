@@ -321,6 +321,13 @@ body {
   animation: blink 900ms ease-in-out infinite;
 }
 
+.composer-mic.speaking {
+  color: oklch(9% 0.015 240);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  animation: blink 900ms ease-in-out infinite;
+}
+
 /* ── HEADER: RESET KEY ── */
 
 .header-reset-key {
