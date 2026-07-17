@@ -6,14 +6,23 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design and build plan.
 ## Status
 
 **Weekend 4 (visual pass)** — ANTON is now a full-screen presence, not a chat window. A
-glowing blue-to-purple orb (CSS + Canvas 2D — no WebGL, no GPU particle engine) fills the
-screen: it breathes slowly when idle, expands and ripples with real mic amplitude while
-listening, swirls faster with a distinct hue while thinking, and pulses on a simulated
-waveform while speaking (SpeechSynthesis exposes no real amplitude to drive this from — see
-the TODO in `js/ui/orb.js` for what changes if TTS ever moves to a streaming cloud voice).
-The mic button floats above the orb as the primary control. Typed text and the full
-conversation are still there, just tucked into a bottom-sheet transcript panel that slides up
-on a tap of the handle — nothing about text mode, memory, or voice is removed, only reskinned.
+glowing blue-to-purple orb fills the screen, rendered as a real WebGL particle system
+(Three.js, ~9,000 points on a fibonacci-sphere shell, a single draw call, additive-blended and
+noise-displaced entirely in the vertex shader — see Status below and `js/ui/orb.js`): it
+breathes slowly when idle, expands and agitates with real mic amplitude while listening, turns
+a distinct blue with a reversed faster swirl while thinking, and pulses on a simulated waveform
+while speaking (SpeechSynthesis exposes no real amplitude to drive this from — see the TODO in
+`js/ui/orb.js` for what changes if TTS ever moves to a streaming cloud voice). The mic button
+floats above the orb as the primary control. Typed text and the full conversation are still
+there, just tucked into a bottom-sheet transcript panel that slides up on a tap of the handle —
+nothing about text mode, memory, or voice is removed, only reskinned.
+
+Three.js is the one deliberate exception to this repo's no-dependency rule, loaded via an
+`importmap` in `index.html` from a pinned jsdelivr CDN URL — still zero build step, zero npm,
+deploys to GitHub Pages as plain static files exactly as before. An earlier CSS/Canvas-2D orb
+(layered gradients + ~26 floating dots) was replaced outright by this WebGL version because it
+read as flat and lifeless at that density; the state API it exposed (`setState`/`setLevel`/
+`watchStreamLevel`) carried over unchanged, so nothing in `main.js`'s wiring had to move.
 
 Underneath, the voice/brain/memory pipeline is unchanged from Weekend 3 + voice polish: ANTON
 has ears and a voice, tuned for actual conversation. Tap the mic to push-to-talk; recorded
@@ -69,4 +78,4 @@ ANTON is speaking, tap the mic to interrupt him — no need to wait for him to f
 - `js/voice/stt.js` — push-to-talk recording (MediaRecorder, echo-cancelling constraints) + Groq Whisper transcription; exposes the live recording stream so the orb can read mic level off it
 - `js/voice/tts.js` — SpeechSynthesis output, sanitized, with iOS first-gesture unlock, mute toggle, and a `stopSpeaking()`/`onEnd` seam for barge-in
 - `js/voice/barge_in.js` — mic-level monitor (Web Audio AnalyserNode) that detects the user talking over ANTON and interrupts him
-- `js/ui/orb.js` — the CSS/Canvas-2D orb: layered radial gradients + a rotating particle ring, driven by `setState('idle'|'listening'|'thinking'|'speaking')` and `setLevel(0..1)`; `watchStreamLevel()` wires a MediaStream to live amplitude
+- `js/ui/orb.js` — the WebGL orb: a Three.js `Points` particle sphere (fibonacci-sphere distribution, shader-driven noise displacement, additive blending), driven by `setState('idle'|'listening'|'thinking'|'speaking')` and `setLevel(0..1)`; `watchStreamLevel()` wires a MediaStream to live amplitude. `PARTICLE_COUNT` is the tunable density constant at the top of the file.
