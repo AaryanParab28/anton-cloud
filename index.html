@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0c0e15">
+  <meta name="theme-color" content="#050609">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>ANTON</title>
   <link rel="stylesheet" href="css/anton.css">
 </head>
 <body>
-  <header class="header" role="banner">
-    <div class="header-inner">
-      <span class="header-name" aria-label="ANTON personal AI assistant">ANTON</span>
-      <div class="header-status" aria-live="polite" aria-atomic="true">
+  <div class="stage">
+    <canvas id="orb-canvas" aria-hidden="true"></canvas>
+
+    <div class="stage-status" aria-live="polite" aria-atomic="true">
+      <span class="stage-name">ANTON</span>
+      <span class="status-line">
         <span class="status-dot" id="status-dot"></span>
         <span class="status-text" id="status-text">online</span>
-      </div>
-      <button class="header-reset-key" id="voice-toggle" type="button">voice: on</button>
-      <button class="header-reset-key" id="clear-memory" type="button">clear memory</button>
-      <button class="header-reset-key" id="reset-key" type="button">reset key</button>
+      </span>
     </div>
-  </header>
+  </div>
 
-  <main class="messages" id="messages" role="log" aria-label="Conversation" aria-live="polite">
-    <div class="welcome" id="welcome" aria-hidden="true">
-      <p class="welcome-prompt">ask me anything</p>
-    </div>
-  </main>
+  <button class="mic-primary" id="mic-button" type="button" aria-label="Talk to ANTON">
+    <svg width="22" height="22" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+      <rect x="6" y="1.5" width="4" height="7" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+  </button>
 
   <div class="key-gate" id="key-gate" hidden>
     <form class="key-gate-form" id="key-gate-form" autocomplete="off" novalidate>
@@ -43,30 +43,43 @@
     </form>
   </div>
 
-  <footer class="composer" role="contentinfo">
-    <form class="composer-form" id="form" autocomplete="off" novalidate>
-      <label for="input" class="sr-only">Message to ANTON</label>
-      <textarea
-        class="composer-input"
-        id="input"
-        placeholder="say something…"
-        rows="1"
-        maxlength="4000"
-        aria-multiline="true"
-      ></textarea>
-      <button class="composer-mic" id="mic-button" type="button" aria-label="Record voice message">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
-          <rect x="6" y="1.5" width="4" height="7" rx="2" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="composer-send" type="submit" aria-label="Send message">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
-          <path d="M8 2.5L13.5 8L8 13.5M2.5 8H13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </form>
-  </footer>
+  <section class="transcript-panel" id="transcript-panel" aria-label="Conversation transcript">
+    <button class="transcript-handle" id="transcript-toggle" type="button" aria-expanded="false" aria-controls="transcript-panel">
+      <span class="transcript-handle-grip" aria-hidden="true"></span>
+      <span class="transcript-handle-label">transcript</span>
+    </button>
+
+    <div class="transcript-controls">
+      <button class="transcript-control" id="voice-toggle" type="button">voice: on</button>
+      <button class="transcript-control" id="clear-memory" type="button">clear memory</button>
+      <button class="transcript-control" id="reset-key" type="button">reset key</button>
+    </div>
+
+    <main class="messages" id="messages" role="log" aria-label="Conversation" aria-live="polite">
+      <div class="welcome" id="welcome" aria-hidden="true">
+        <p class="welcome-prompt">ask me anything</p>
+      </div>
+    </main>
+
+    <footer class="composer" role="contentinfo">
+      <form class="composer-form" id="form" autocomplete="off" novalidate>
+        <label for="input" class="sr-only">Message to ANTON</label>
+        <textarea
+          class="composer-input"
+          id="input"
+          placeholder="say something…"
+          rows="1"
+          maxlength="4000"
+          aria-multiline="true"
+        ></textarea>
+        <button class="composer-send" type="submit" aria-label="Send message">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+            <path d="M8 2.5L13.5 8L8 13.5M2.5 8H13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </form>
+    </footer>
+  </section>
 
   <script type="module" src="js/main.js"></script>
 </body>

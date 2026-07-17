@@ -24,6 +24,12 @@ export function openMicStream() {
   return navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
 }
 
+// The stream MediaRecorder is currently recording from, so the orb can read live mic level
+// off the same stream instead of opening a second one. Null when not recording.
+export function getActiveStream() {
+  return mediaStream;
+}
+
 export async function startRecording() {
   mediaStream = await openMicStream();
   chunks = [];

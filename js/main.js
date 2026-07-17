@@ -10,6 +10,7 @@ import {
 import * as stt from './voice/stt.js';
 import * as tts from './voice/tts.js';
 import * as bargeIn from './voice/barge_in.js';
+import * as orb from './ui/orb.js';
 
 const form           = document.getElementById('form');
 const input          = document.getElementById('input');
@@ -24,6 +25,9 @@ const clearMemoryBtn = document.getElementById('clear-memory');
 const keyGate        = document.getElementById('key-gate');
 const keyGateForm    = document.getElementById('key-gate-form');
 const keyGateInput   = document.getElementById('key-gate-input');
+const orbCanvas       = document.getElementById('orb-canvas');
+const transcriptPanel = document.getElementById('transcript-panel');
+const transcriptToggle = document.getElementById('transcript-toggle');
 
 const VoiceState = {
   IDLE: 'idle',
@@ -157,10 +161,26 @@ voiceToggleBtn.addEventListener('click', () => {
   voiceToggleBtn.textContent = muted ? 'voice: off' : 'voice: on';
 });
 
+transcriptToggle.addEventListener('click', () => {
+  const isOpen = transcriptPanel.classList.toggle('open');
+  transcriptToggle.setAttribute('aria-expanded', String(isOpen));
+});
+
+let stopLevelWatch = null;
+
+function stopLevelWatchIfActive() {
+  if (stopLevelWatch) {
+    stopLevelWatch();
+    stopLevelWatch = null;
+  }
+}
+
 function enterIdle() {
   voiceState = VoiceState.IDLE;
   micBtn.classList.remove('recording', 'speaking');
   micBtn.disabled = false;
+  stopLevelWatchIfActive();
+  orb.setState('idle');
   setStatus('online');
 }
 
@@ -189,6 +209,9 @@ async function beginListening() {
     micBtn.classList.remove('speaking');
     micBtn.classList.add('recording');
     micBtn.disabled = false;
+    orb.setState('listening');
+    stopLevelWatchIfActive();
+    stopLevelWatch = orb.watchStreamLevel(stt.getActiveStream());
     setStatus('listening…');
   } catch (err) {
     appendMessage('anton', `Error: ${err.message}`);
@@ -200,6 +223,8 @@ async function stopListeningAndSend() {
   voiceState = VoiceState.TRANSCRIBING;
   micBtn.classList.remove('recording');
   micBtn.disabled = true;
+  stopLevelWatchIfActive();
+  orb.setState('thinking');
   setStatus('transcribing…');
 
   try {
@@ -242,6 +267,7 @@ async function sendMessage(text, { voice = false } = {}) {
   const thinkingEl = appendThinking();
   voiceState = VoiceState.RESPONDING;
   micBtn.disabled = true;
+  orb.setState('thinking');
   setStatus('thinking');
   sendBtn.disabled = true;
 
@@ -268,6 +294,7 @@ async function sendMessage(text, { voice = false } = {}) {
     voiceState = VoiceState.SPEAKING;
     micBtn.disabled = false;
     micBtn.classList.add('speaking');
+    orb.setState('speaking');
     setStatus('speaking…');
     bargeIn.startMonitoring(() => beginListening());
     tts.speak(reply, {
@@ -321,6 +348,7 @@ async function loadHistory() {
 }
 
 async function boot() {
+  orb.init(orbCanvas);
   await loadHistory();
   const existingKey = await getApiKey();
   if (!existingKey) {
