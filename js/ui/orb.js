@@ -178,6 +178,11 @@ let simPhase = 0;
 let lastTs = null;
 let rafId = null;
 
+// True while a real audio analyser (Groq TTS playback) is driving the 'speaking' state via
+// watchAnalyserLevel below. False falls back to the simulated waveform in paramsForState -
+// the browser SpeechSynthesis path exposes no amplitude to read.
+let speakingRealLevelActive = false;
+
 function buildAttributes(count) {
   const positions = new Float32Array(count * 3);
   const baseDir = new Float32Array(count * 3);
@@ -222,6 +227,17 @@ function paramsForState(t, dt) {
     };
   }
   if (state === 'speaking') {
+    if (speakingRealLevelActive) {
+      // Real Groq TTS playback amplitude - same shape of response as 'listening', just tuned
+      // for the speaking context (always at least gently active, never fully still).
+      return {
+        turbulence: 0.08 + (displayedLevel * 0.5),
+        breath: 0.05 + (displayedLevel * 0.3),
+        rotSpeed: 0.22 + (displayedLevel * 0.2),
+        blueBias: 0,
+      };
+    }
+    // Browser SpeechSynthesis fallback: no amplitude is exposed, so simulate a waveform.
     simPhase += dt;
     const sim = 0.3 + (0.22 * Math.sin(simPhase * 5.3)) + (0.13 * Math.sin((simPhase * 11.1) + 1.7));
     const clamped = Math.max(0, Math.min(1, sim));
@@ -383,22 +399,13 @@ export function setLevel(value) {
   targetLevel = Math.max(0, Math.min(1, value));
 }
 
-// Real amplitude reactivity for SPEAKING becomes possible if/when TTS moves from
-// SpeechSynthesis (no audio stream exposed) to a cloud provider that returns actual audio -
-// at that point the simulated waveform in paramsForState() can be replaced with a real
-// AnalyserNode on that stream, the same way watchStreamLevel() below already works for LISTENING.
-export function watchStreamLevel(stream) {
-  if (!stream) {
-    return () => {};
-  }
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const source = audioCtx.createMediaStreamSource(stream);
-  const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 512;
-  source.connect(analyser);
+// Shared RMS-level tick loop. `markSpeaking: true` flags the 'speaking' state as
+// analyser-driven (see paramsForState) for the duration of this watch.
+function watchAnalyser(analyser, { markSpeaking = false } = {}) {
   const data = new Uint8Array(analyser.fftSize);
   let raf = null;
   let stopped = false;
+  if (markSpeaking) speakingRealLevelActive = true;
 
   function tick() {
     if (stopped) return;
@@ -416,8 +423,36 @@ export function watchStreamLevel(stream) {
   return function stop() {
     stopped = true;
     if (raf !== null) cancelAnimationFrame(raf);
-    source.disconnect();
-    audioCtx.close().catch(() => {});
+    if (markSpeaking) speakingRealLevelActive = false;
     setLevel(0);
   };
+}
+
+// Builds its own AudioContext/AnalyserNode from a live MediaStream (used for LISTENING, fed by
+// the mic recording stream in stt.js).
+export function watchStreamLevel(stream) {
+  if (!stream) {
+    return () => {};
+  }
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = audioCtx.createMediaStreamSource(stream);
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 512;
+  source.connect(analyser);
+  const stopWatch = watchAnalyser(analyser);
+
+  return function stop() {
+    stopWatch();
+    source.disconnect();
+    audioCtx.close().catch(() => {});
+  };
+}
+
+// Takes an already-built AnalyserNode (used for SPEAKING, fed by tts.js's Groq TTS <audio>
+// playback graph) and marks the 'speaking' state as real-amplitude-driven for the duration.
+export function watchAnalyserLevel(analyser) {
+  if (!analyser) {
+    return () => {};
+  }
+  return watchAnalyser(analyser, { markSpeaking: true });
 }

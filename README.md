@@ -24,16 +24,25 @@ deploys to GitHub Pages as plain static files exactly as before. An earlier CSS/
 read as flat and lifeless at that density; the state API it exposed (`setState`/`setLevel`/
 `watchStreamLevel`) carried over unchanged, so nothing in `main.js`'s wiring had to move.
 
-Underneath, the voice/brain/memory pipeline is unchanged from Weekend 3 + voice polish: ANTON
-has ears and a voice, tuned for actual conversation. Tap the mic to push-to-talk; recorded
-audio is transcribed via Groq's Whisper endpoint (not the Web Speech API — iOS Safari's
-built-in speech recognition doesn't work in standalone/home-screen mode) and fed through the
-exact same pipeline a typed message uses. Replies are spoken aloud via SpeechSynthesis,
-sanitized so ANTON never reads leaked tool-call JSON/code aloud. When the input came in by
-voice, ANTON is told to answer short and conversational instead of full-length (typed replies
-are unaffected). While ANTON is speaking, starting to talk (barge-in, detected via a mic-level
-monitor) or tapping the mic both stop him instantly and open the mic for your next question. A
-"voice: on/off" toggle (now inside the transcript panel) mutes/unmutes spoken replies.
+Underneath, the voice/brain/memory pipeline is unchanged from Weekend 3 + voice polish, with one
+upgrade: ANTON's spoken voice now comes from Groq's cloud TTS (Orpheus, by Canopy Labs — Preview
+status) instead of the robotic browser SpeechSynthesis voice, whenever it's reachable. Tap the mic
+to push-to-talk; recorded audio is transcribed via Groq's Whisper endpoint (not the Web Speech
+API — iOS Safari's built-in speech recognition doesn't work in standalone/home-screen mode) and
+fed through the exact same pipeline a typed message uses. Replies are sanitized so ANTON never
+reads leaked tool-call JSON/code aloud, then spoken via a POST to Groq's `/audio/speech` endpoint
+using the same on-device Groq key as everything else; the returned audio plays through an
+`<audio>` element, and its real amplitude drives the orb during the SPEAKING state (a genuine
+Web Audio AnalyserNode on the actual voice, not a simulated pulse). If that call fails for any
+reason — network, rate limit, the endpoint changing under this still-Preview API — ANTON falls
+back silently to the browser's SpeechSynthesis voice so he never goes mute, and the orb falls back
+to a simulated speaking pulse to match (real amplitude isn't available from that path). Either way,
+when the input came in by voice, ANTON is told to answer short and conversational instead of
+full-length (typed replies are unaffected). While ANTON is speaking, starting to talk (barge-in,
+detected via a mic-level monitor) or tapping the mic both stop him instantly — now by pausing the
+audio element (or cancelling SpeechSynthesis on the fallback path) rather than only the latter —
+and open the mic for your next question. A "voice: on/off" toggle (inside the transcript panel)
+mutes/unmutes spoken replies.
 
 Conversation history persists in IndexedDB across reloads (Weekend 2), and messages flow
 through a ReAct loop (think → act → observe → repeat) that can call one tool — `web_search`,
@@ -76,6 +85,6 @@ ANTON is speaking, tap the mic to interrupt him — no need to wait for him to f
 - `js/tools/base.js` — the tool contract: `{ name, description, run(args) }`
 - `js/tools/web_search.js` — the first hand: real Wikipedia search (CORS-verified, keyless)
 - `js/voice/stt.js` — push-to-talk recording (MediaRecorder, echo-cancelling constraints) + Groq Whisper transcription; exposes the live recording stream so the orb can read mic level off it
-- `js/voice/tts.js` — SpeechSynthesis output, sanitized, with iOS first-gesture unlock, mute toggle, and a `stopSpeaking()`/`onEnd` seam for barge-in
+- `js/voice/tts.js` — voice output: Groq TTS (Orpheus) as primary, chunked under its 200-char input cap and played through an `<audio>` element wired to a Web Audio AnalyserNode (`getAnalyser()`) for real speaking-amplitude; falls back silently to browser SpeechSynthesis on any failure. Sanitized, with iOS first-gesture unlock, mute toggle, and a `stopSpeaking()`/`onEnd` seam for barge-in
 - `js/voice/barge_in.js` — mic-level monitor (Web Audio AnalyserNode) that detects the user talking over ANTON and interrupts him
-- `js/ui/orb.js` — the WebGL orb: a Three.js `Points` particle sphere (fibonacci-sphere distribution, shader-driven noise displacement, additive blending), driven by `setState('idle'|'listening'|'thinking'|'speaking')` and `setLevel(0..1)`; `watchStreamLevel()` wires a MediaStream to live amplitude. `PARTICLE_COUNT` is the tunable density constant at the top of the file.
+- `js/ui/orb.js` — the WebGL orb: a Three.js `Points` particle sphere (fibonacci-sphere distribution, shader-driven noise displacement, additive blending), driven by `setState('idle'|'listening'|'thinking'|'speaking')` and `setLevel(0..1)`; `watchStreamLevel()` wires a MediaStream to live amplitude (LISTENING), `watchAnalyserLevel()` wires an existing AnalyserNode to it (SPEAKING, fed by `tts.js`'s Groq TTS playback) — SPEAKING falls back to a simulated pulse whenever no such watch is active. `PARTICLE_COUNT` is the tunable density constant at the top of the file.

@@ -194,6 +194,7 @@ function interruptSpeakingIfAny() {
   if (voiceState === VoiceState.SPEAKING) {
     speechGeneration++; // invalidate the in-flight speak()'s onEnd callback
     stopBargeInIfActive();
+    stopLevelWatchIfActive(); // tear down a Groq-audio analyser watch if one was active
     tts.stopSpeaking();
   }
 }
@@ -297,7 +298,20 @@ async function sendMessage(text, { voice = false } = {}) {
     orb.setState('speaking');
     setStatus('speaking…');
     bargeIn.startMonitoring(() => beginListening());
-    tts.speak(reply, {
+    const ttsApiKey = await getApiKey();
+    tts.speak(reply, ttsApiKey, {
+      onGroqAudioStart: () => {
+        if (speechGeneration !== myGeneration) return;
+        // Real Groq TTS audio is playing - drive the orb from its actual amplitude instead
+        // of the simulated waveform.
+        stopLevelWatchIfActive();
+        stopLevelWatch = orb.watchAnalyserLevel(tts.getAnalyser());
+      },
+      onFallbackStart: () => {
+        if (speechGeneration !== myGeneration) return;
+        // Browser SpeechSynthesis exposes no amplitude - fall back to the orb's simulated pulse.
+        stopLevelWatchIfActive();
+      },
       onEnd: () => {
         if (speechGeneration !== myGeneration) {
           return; // superseded by a manual stop or a barge-in trigger
